@@ -15,15 +15,25 @@ import {
 import RectBody from './classes/RectBody'
 import CircBody from './classes/CircBody'
 import PolyBody from './classes/PolyBody'
-import PointsArrayRect from './classes/PointsArrayRect'
-import PointsArrayHex from './classes/PointsArrayHex'
+import PointsArrayPoly from './classes/PointsArrayPoly'
 import * as constants from './constants'
+
+type CoordsT = [number, number, string][][]
+type MouseMoveEvent = (event: {
+  source: {
+    mouse: {
+      position: { x: number; y: number }
+    }
+  }
+}) => void
 
 const Test: React.FC = () => {
   let n = 0
   let nh = 0
-  let coordsRect: [number, number, string][][] = []
-  let coordsHex: [number, number, string][][] = []
+  let nt = 0
+  let coordsRect: CoordsT = []
+  let coordsHex: CoordsT = []
+  let coordsTrian: CoordsT = []
 
   const scene = useRef<HTMLDivElement>(null)
   const engine = useRef(Engine.create())
@@ -31,7 +41,6 @@ const Test: React.FC = () => {
   const runner = useRef(Runner.create())
   const posX = useRef(0)
   const posY = useRef(0)
-  const xTrian = useRef(Math.random() * 400 + 30)
 
   const steps = useRef<number>()
   const yIncr = useRef<number>()
@@ -78,40 +87,40 @@ const Test: React.FC = () => {
     ).body
   )
 
+  const partE = useRef<PolyBody['body']>(
+    new PolyBody(
+      constants.xTrian,
+      constants.yTrian,
+      3,
+      constants.sizeTrian,
+      `trian${nt}`
+    ).body
+  )
+
+  const partF = useRef<CircBody['body']>(
+    new CircBody(
+      constants.xTrian,
+      constants.yTrian,
+      constants.sizeCirc,
+      `circt${nt}`
+    ).body
+  )
+
   const rects = useRef<any[]>([])
   const circs = useRef<Body[]>([])
   const hexs = useRef<any[]>([])
   const circsh = useRef<any[]>([])
+  const trians = useRef<any[]>([])
+  const circst = useRef<any[]>([])
 
-  const pointsArrayRect = new PointsArrayRect()
+  const pointsArrayRect = new PointsArrayPoly()
   const points = pointsArrayRect.getPoints()
 
-  const pointsArrayHex = new PointsArrayHex()
+  const pointsArrayHex = new PointsArrayPoly()
   const pointsH = pointsArrayHex.getPoints()
 
-  const pointsArrayTrian: any[] = []
-
-  const partE = useRef(
-    Bodies.polygon(xTrian.current, constants.yTrian, 3, constants.sizeTrian, {
-      inertia: Infinity,
-      label: `trian${n}`,
-    })
-  )
-
-  const partF = useRef(
-    Bodies.circle(xTrian.current, constants.yTrian, constants.sizeCirc, {
-      collisionFilter: {
-        group: -1,
-        category: constants.greenCategory,
-        mask: 0,
-      },
-      inertia: 0,
-      frictionAir: 0,
-      inverseInertia: 0,
-      restitution: 0,
-      frictionStatic: 0,
-    })
-  )
+  const pointsArrayTrian = new PointsArrayPoly()
+  const pointsT = pointsArrayTrian.getPoints()
 
   function isPointInsideAABB(box: any, pointX: number, pointY: number) {
     return (
@@ -132,8 +141,8 @@ const Test: React.FC = () => {
       if (shape?.includes('hex')) {
         pointsArrayHex.push(xxx.current, yyy.current, shape)
       }
-      if (shape === 'trian') {
-        pointsArrayTrian.push([xxx.current, yyy.current])
+      if (shape?.includes('trian')) {
+        pointsArrayTrian.push(xxx.current, yyy.current, shape)
       }
     }
 
@@ -221,6 +230,294 @@ const Test: React.FC = () => {
     ])
   }
 
+  const handleAddTrian = () => {
+    nt++
+    const newPartE = new PolyBody(
+      constants.xTrian,
+      constants.yTrian,
+      3,
+      constants.sizeTrian,
+      `trian${nt}`
+    ).body
+    const newPartF = new CircBody(
+      constants.xTrian,
+      constants.yTrian,
+      constants.sizeCirc,
+      `circt${nt}`
+    ).body
+    partE.current = newPartE
+    partF.current = newPartF
+    trians.current.push(partE.current)
+    circst.current.push(partF.current)
+
+    World.add(engine.current.world, [
+      // trian and circ
+      newPartE,
+      newPartF,
+    ])
+  }
+
+  const mouseMoveEvent: MouseMoveEvent = function (event) {
+    if (points.length > 0) {
+      points.splice(0, points.length)
+    }
+
+    if (pointsH.length > 0) {
+      pointsH.splice(0, pointsH.length)
+    }
+
+    if (pointsT.length > 0) {
+      pointsT.splice(0, pointsT.length)
+    }
+
+    const foundPhysics = Query.point(
+      engine.current.world.bodies,
+      event.source.mouse.position
+    )
+
+    posX.current = event.source.mouse.position.x
+    posY.current = event.source.mouse.position.y
+
+    const touchX: number = posX.current,
+      touchY: number = posY.current
+
+    //rect
+    if (
+      world.bodies.map((x) => x.label.includes('rect')).some((y) => y === true)
+    ) {
+      if (rects && rects.current.length > 0) {
+        coordsRect = [
+          ...rects.current.map((z) =>
+            z.vertices.map((x: any) => [x.x, x.y, z.label])
+          ),
+        ]
+
+        rects.current.map((u) => {
+          if (coordsRect.length >= 1) {
+            coordsRect.map((x) => {
+              //rectangle face1
+              DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
+              //rectangle face2
+              DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
+              //rectangle face3
+              DDA(x[3][0], x[3][1], x[2][0], x[2][1], u.label)
+              //rectangle face4
+              DDA(x[0][0], x[0][1], x[3][0], x[3][1], u.label)
+            })
+          }
+        })
+      }
+    }
+
+    //hex
+    if (
+      world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
+    ) {
+      if (hexs && hexs.current.length > 0) {
+        coordsHex = [
+          ...hexs.current.map((z) =>
+            z.vertices.map((x: any) => [x.x, x.y, z.label])
+          ),
+        ]
+
+        hexs.current.map((u) => {
+          if (coordsHex.length >= 1) {
+            coordsHex.map((x) => {
+              //hexagon face1
+              DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
+              //hexagon face2
+              DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
+              // hexagon face3
+              DDA(x[3][0], x[3][1], x[2][0], x[2][1], u.label)
+              //hexagon face4
+              DDA(x[3][0], x[3][1], x[4][0], x[4][1], u.label)
+              //hexagon face5
+              DDA(x[4][0], x[4][1], x[5][0], x[5][1], u.label)
+              //hexagon face6
+              DDA(x[5][0], x[5][1], x[0][0], x[0][1], u.label)
+            })
+          }
+        })
+      }
+    }
+
+    //trian
+    if (
+      world.bodies.map((x) => x.label.includes('trian')).some((y) => y === true)
+    ) {
+      if (trians && trians.current.length > 0) {
+        coordsTrian = [
+          ...trians.current.map((z) =>
+            z.vertices.map((x: any) => [x.x, x.y, z.label])
+          ),
+        ]
+
+        trians.current.map((u) => {
+          if (coordsTrian.length >= 1) {
+            coordsTrian.map((x) => {
+              //triangle face1
+              DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
+              //triangle face2
+              DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
+              // triangle face3
+              DDA(x[2][0], x[2][1], x[0][0], x[0][1], u.label)
+            })
+          }
+        })
+      }
+    }
+
+    // line slope --if you want to use define variables
+    // const lineSlope = (y2 - y1) / (x2 - x1)
+    //intermediate points on a line
+    // const lineMidpoint = [
+    //   (coordsHex[0][0] + coordsHex[2][0]) / 2,
+    //   (coordsHex[0][1] + coordsHex[2][1]) / 2,
+    // ]
+
+    //rect
+    if (
+      world.bodies.map((x) => x.label.includes('rect')).some((y) => y === true)
+    ) {
+      rects.current.map((u) => {
+        coordsRect = coordsRect
+          .filter((y) => y.includes(u.label))
+          .map((j) => j)
+          .concat(points.filter((x) => x.includes(u.label)))
+
+        let closestRect = [null, null] as number[] | null[] | any[],
+          distanceRect = Infinity
+
+        if (coordsRect.length > 0) {
+          for (const [xX, yY] of coordsRect) {
+            // @ts-ignore
+            const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
+            if (d < distanceRect) {
+              closestRect = [xX, yY]
+              distanceRect = d
+            }
+          }
+        }
+
+        let numero = u.label.replace('rect', '')
+        let pB = circs?.current?.filter((j) => j.label.includes(numero))
+
+        if (
+          isPointInsideAABB(u.bounds, posX.current, posY.current) === true &&
+          foundPhysics[0] &&
+          foundPhysics[0].label.includes(u.label) &&
+          closestRect
+        ) {
+          Body.translate(pB[0], {
+            x: -(pB[0].position.x - posX.current),
+            y: -(pB[0].position.y - posY.current),
+          })
+        } else if (closestRect) {
+          Body.translate(pB[0], {
+            x: -(pB[0].position.x - closestRect[0]!),
+            y: -(pB[0].position.y - closestRect[1]!),
+          })
+        }
+
+        Body.setVelocity(pB[0], { x: 0, y: 0 })
+      })
+    }
+
+    //hex
+    if (
+      world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
+    ) {
+      hexs.current.map((u) => {
+        coordsHex = coordsHex
+          .filter((y) => y.includes(u.label))
+          .map((j) => j)
+          .concat(pointsH.filter((x) => x.includes(u.label)))
+
+        let closestHex = [null, null] as number[] | null[] | any[],
+          distanceHex = Infinity
+
+        if (coordsHex.length > 0) {
+          for (const [xX, yY] of coordsHex) {
+            // @ts-ignore
+            const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
+            if (d < distanceHex) {
+              closestHex = [xX, yY]
+              distanceHex = d
+            }
+          }
+        }
+
+        let numeroh = u.label.replace('hex', '')
+        let pBH = circsh?.current?.filter((j) => j.label.includes(numeroh))
+
+        if (
+          foundPhysics[0] &&
+          foundPhysics[0].label.includes(u.label) &&
+          closestHex
+        ) {
+          Body.translate(pBH[0], {
+            x: -(pBH[0]?.position.x - posX.current),
+            y: -(pBH[0]?.position.y - posY.current),
+          })
+        } else {
+          Body.translate(pBH[0], {
+            x: -(pBH[0]?.position.x - closestHex[0]!),
+            y: -(pBH[0]?.position.y - closestHex[1]!),
+          })
+        }
+
+        Body.setVelocity(pBH[0], { x: 0, y: 0 })
+      })
+    }
+
+    //trian
+    if (
+      world.bodies.map((x) => x.label.includes('trian')).some((y) => y === true)
+    ) {
+      trians.current.map((u) => {
+        coordsTrian = coordsTrian
+          .filter((y) => y.includes(u.label))
+          .map((j) => j)
+          .concat(pointsT.filter((x) => x.includes(u.label)))
+
+        let closestTrian = [null, null] as number[] | null[] | any[],
+          distanceTrian = Infinity
+
+        if (coordsTrian.length > 0) {
+          for (const [xX, yY] of coordsTrian) {
+            // @ts-ignore
+            const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
+            if (d < distanceTrian) {
+              closestTrian = [xX, yY]
+              distanceTrian = d
+            }
+          }
+        }
+
+        let numerot = u.label.replace('trian', '')
+        let pBT = circst?.current?.filter((j) => j.label.includes(numerot))
+
+        if (
+          foundPhysics[0] &&
+          foundPhysics[0].label.includes(u.label) &&
+          closestTrian
+        ) {
+          Body.translate(pBT[0], {
+            x: -(pBT[0].position.x - posX.current),
+            y: -(pBT[0].position.y - posY.current),
+          })
+        } else {
+          Body.translate(pBT[0], {
+            x: -(pBT[0].position.x - closestTrian[0]!),
+            y: -(pBT[0].position.y - closestTrian[1]!),
+          })
+        }
+
+        Body.setVelocity(pBT[0], { x: 0, y: 0 })
+      })
+    }
+  }
+
   useEffect(() => {
     const cw = document.body.clientWidth
     const ch = document.body.clientHeight
@@ -241,10 +538,6 @@ const Test: React.FC = () => {
     })
 
     Composite.add(world, [
-      // blocks
-      partE.current,
-      partF.current,
-
       // walls
       Bodies.rectangle(400, 0, 800, 50, { isStatic: true, label: 'wall1' }),
       Bodies.rectangle(400, 600, 800, 50, { isStatic: true, label: 'wall2' }),
@@ -263,253 +556,7 @@ const Test: React.FC = () => {
         },
       })
 
-    Events.on(mouseConstraint, 'mousemove', function (event) {
-      if (points.length > 0) {
-        points.splice(0, points.length)
-      }
-
-      if (pointsH.length > 0) {
-        pointsH.splice(0, pointsH.length)
-      }
-
-      if (pointsArrayTrian.length > 0) {
-        pointsArrayTrian.splice(0, pointsArrayTrian.length)
-      }
-
-      const foundPhysics = Query.point(
-        engine.current.world.bodies,
-        event.source.mouse.position
-      )
-
-      posX.current = event.source.mouse.position.x
-      posY.current = event.source.mouse.position.y
-
-      const touchX: number = posX.current,
-        touchY: number = posY.current
-
-      if (
-        world.bodies
-          .map((x) => x.label.includes('rect'))
-          .some((y) => y === true)
-      ) {
-        if (rects && rects.current.length > 0) {
-          coordsRect = [
-            ...rects.current.map((z) =>
-              z.vertices.map((x: any) => [x.x, x.y, z.label])
-            ),
-          ]
-
-          rects.current.map((u) => {
-            if (coordsRect.length >= 1) {
-              coordsRect.map((x) => {
-                //rectangle face1
-                DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
-                //rectangle face2
-                DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
-                //rectangle face3
-                DDA(x[3][0], x[3][1], x[2][0], x[2][1], u.label)
-                //rectangle face4
-                DDA(x[0][0], x[0][1], x[3][0], x[3][1], u.label)
-              })
-            }
-          })
-        }
-      }
-
-      if (
-        world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
-      ) {
-        if (hexs && hexs.current.length > 0) {
-          coordsHex = [
-            ...hexs.current.map((z) =>
-              z.vertices.map((x: any) => [x.x, x.y, z.label])
-            ),
-          ]
-
-          hexs.current.map((u) => {
-            if (coordsHex.length >= 1) {
-              coordsHex.map((x) => {
-                //hexagon face1
-                DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
-                //hexagon face2
-                DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
-                // hexagon face3
-                DDA(x[3][0], x[3][1], x[2][0], x[2][1], u.label)
-                //hexagon face4
-                DDA(x[3][0], x[3][1], x[4][0], x[4][1], u.label)
-                //hexagon face5
-                DDA(x[4][0], x[4][1], x[5][0], x[5][1], u.label)
-                //hexagon face6
-                DDA(x[5][0], x[5][1], x[0][0], x[0][1], u.label)
-              })
-            }
-          })
-        }
-      }
-
-      let coordsTrian = [...partE.current.vertices.map((x) => [x.x, x.y])]
-
-      //triangle face1
-      DDA(
-        coordsTrian[0][0],
-        coordsTrian[0][1],
-        coordsTrian[1][0],
-        coordsTrian[1][1],
-        constants.trianShape
-      )
-      //triangle face2
-      DDA(
-        coordsTrian[1][0],
-        coordsTrian[1][1],
-        coordsTrian[2][0],
-        coordsTrian[2][1],
-        constants.trianShape
-      )
-      // triangle face3
-      DDA(
-        coordsTrian[2][0],
-        coordsTrian[2][1],
-        coordsTrian[0][0],
-        coordsTrian[0][1],
-        constants.trianShape
-      )
-
-      // line slope --if you want to use define variables
-      // const lineSlope = (y2 - y1) / (x2 - x1)
-      //intermediate points on a line
-      // const lineMidpoint = [
-      //   (coordsHex[0][0] + coordsHex[2][0]) / 2,
-      //   (coordsHex[0][1] + coordsHex[2][1]) / 2,
-      // ]
-
-      //rect
-      if (
-        world.bodies
-          .map((x) => x.label.includes('rect'))
-          .some((y) => y === true)
-      ) {
-        rects.current.map((u) => {
-          coordsRect = coordsRect
-            .filter((y) => y.includes(u.label))
-            .map((j) => j)
-            .concat(points.filter((x) => x.includes(u.label)))
-
-          let closestRect = [null, null] as number[] | null[] | any[],
-            distanceRect = Infinity
-
-          if (coordsRect.length > 0) {
-            for (const [xX, yY] of coordsRect) {
-              // @ts-ignore
-              const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
-              if (d < distanceRect) {
-                closestRect = [xX, yY]
-                distanceRect = d
-              }
-            }
-          }
-
-          let numero = u.label.replace('rect', '')
-          let pB = circs?.current?.filter((j) => j.label.includes(numero))
-
-          if (
-            isPointInsideAABB(u.bounds, posX.current, posY.current) === true &&
-            foundPhysics[0] &&
-            foundPhysics[0].label.includes(u.label) &&
-            closestRect
-          ) {
-            Body.translate(pB[0], {
-              x: -(pB[0].position.x - posX.current),
-              y: -(pB[0].position.y - posY.current),
-            })
-          } else if (closestRect) {
-            Body.translate(pB[0], {
-              x: -(pB[0].position.x - closestRect[0]!),
-              y: -(pB[0].position.y - closestRect[1]!),
-            })
-          }
-
-          Body.setVelocity(pB[0], { x: 0, y: 0 })
-        })
-      }
-
-      //hex
-      if (
-        world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
-      ) {
-        hexs.current.map((u) => {
-          coordsHex = coordsHex
-            .filter((y) => y.includes(u.label))
-            .map((j) => j)
-            .concat(pointsH.filter((x) => x.includes(u.label)))
-
-          let closestHex = [null, null] as number[] | null[] | any[],
-            distanceHex = Infinity
-
-          if (coordsHex.length > 0) {
-            for (const [xX, yY] of coordsHex) {
-              // @ts-ignore
-              const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
-              if (d < distanceHex) {
-                closestHex = [xX, yY]
-                distanceHex = d
-              }
-            }
-          }
-
-          let numeroh = u.label.replace('hex', '')
-          let pBH = circsh?.current?.filter((j) => j.label.includes(numeroh))
-
-          if (
-            foundPhysics[0] &&
-            foundPhysics[0].label.includes(u.label) &&
-            closestHex
-          ) {
-            Body.translate(pBH[0], {
-              x: -(pBH[0]?.position.x - posX.current),
-              y: -(pBH[0]?.position.y - posY.current),
-            })
-          } else {
-            Body.translate(pBH[0], {
-              x: -(pBH[0]?.position.x - closestHex[0]!),
-              y: -(pBH[0]?.position.y - closestHex[1]!),
-            })
-          }
-
-          Body.setVelocity(pBH[0], { x: 0, y: 0 })
-        })
-      }
-
-      coordsTrian = coordsTrian.concat(pointsArrayTrian)
-      let closestTrian = [null, null] as number[] | null[],
-        distanceTrian = Infinity
-
-      for (const [xX, yY] of coordsTrian) {
-        let d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
-        if (d < distanceTrian) {
-          closestTrian = [xX, yY]
-          distanceTrian = d
-        }
-      }
-
-      //trian
-      if (
-        foundPhysics[0] &&
-        foundPhysics[0].label.includes('trian') &&
-        closestTrian
-      ) {
-        Body.translate(partF.current, {
-          x: -(partF.current.position.x - posX.current),
-          y: -(partF.current.position.y - posY.current),
-        })
-      } else {
-        Body.translate(partF.current, {
-          x: -(partF.current.position.x - closestTrian[0]!),
-          y: -(partF.current.position.y - closestTrian[1]!),
-        })
-      }
-
-      Body.setVelocity(partF.current, { x: 0, y: 0 })
-    })
+    Events.on(mouseConstraint, 'mousemove', mouseMoveEvent)
 
     Composite.add(world, mouseConstraint)
 
@@ -526,10 +573,30 @@ const Test: React.FC = () => {
 
     // unmount
     return () => {
+      clearInterval(time)
       Render.stop(render)
       Runner.stop(runner.current)
+      World.clear(world, false)
       Engine.clear(engine.current)
       Composite.clear(world, false)
+
+      partA.current = null as any
+      partB.current = null as any
+      partC.current = null as any
+      partD.current = null as any
+      partE.current = null as any
+      partF.current = null as any
+      rects.current = []
+      circs.current = []
+      hexs.current = []
+      circsh.current = []
+      trians.current = []
+      circst.current = []
+      pointsArrayRect.clear()
+      pointsArrayHex.clear()
+      pointsArrayTrian.clear()
+      Events.off(mouseConstraint, 'mousemove', mouseMoveEvent)
+
       render.canvas.remove()
       render.canvas = null as any
       render.context = null as any
@@ -541,6 +608,7 @@ const Test: React.FC = () => {
     <div>
       <button onClick={handleAddSquare}>Click me to add a Rect</button>
       <button onClick={handleAddHex}>Click me to add a Hexagon</button>
+      <button onClick={handleAddTrian}>Click me to add a Triangle</button>
       <div ref={scene} style={{ width: '100%', height: '100%' }} />
     </div>
   )

@@ -1,4 +1,4 @@
-class PointsArrayHex {
+class PointsArrayPoly {
   private points: any[] = []
 
   public push(x: number | undefined, y: number | undefined, shape: string) {
@@ -13,4 +13,4 @@ class PointsArrayHex {
     this.points = []
   }
 }
-export default PointsArrayHex
+export default PointsArrayPoly
