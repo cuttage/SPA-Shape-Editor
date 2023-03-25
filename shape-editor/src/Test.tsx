@@ -14,12 +14,16 @@ import {
 } from 'matter-js'
 import RectBody from './classes/RectBody'
 import CircBody from './classes/CircBody'
+import PolyBody from './classes/PolyBody'
 import PointsArrayRect from './classes/PointsArrayRect'
+import PointsArrayHex from './classes/PointsArrayHex'
 import * as constants from './constants'
 
 const Test: React.FC = () => {
   let n = 0
+  let nh = 0
   let coordsRect: [number, number, string][][] = []
+  let coordsHex: [number, number, string][][] = []
 
   const scene = useRef<HTMLDivElement>(null)
   const engine = useRef(Engine.create())
@@ -27,7 +31,6 @@ const Test: React.FC = () => {
   const runner = useRef(Runner.create())
   const posX = useRef(0)
   const posY = useRef(0)
-  const xHex = useRef(Math.random() * 400 + 30)
   const xTrian = useRef(Math.random() * 400 + 30)
 
   const steps = useRef<number>()
@@ -56,35 +59,37 @@ const Test: React.FC = () => {
     ).body
   )
 
+  const partC = useRef<PolyBody['body']>(
+    new PolyBody(
+      constants.xHex,
+      constants.yHex,
+      6,
+      constants.sizeHex,
+      `hex${nh}`
+    ).body
+  )
+
+  const partD = useRef<CircBody['body']>(
+    new CircBody(
+      constants.xHex,
+      constants.yHex,
+      constants.sizeCirc,
+      `circh${nh}`
+    ).body
+  )
+
   const rects = useRef<any[]>([])
   const circs = useRef<Body[]>([])
+  const hexs = useRef<any[]>([])
+  const circsh = useRef<any[]>([])
 
   const pointsArrayRect = new PointsArrayRect()
   const points = pointsArrayRect.getPoints()
-  const pointsArrayHex: any[] = [],
-    pointsArrayTrian: any[] = []
 
-  const partC = useRef(
-    Bodies.polygon(xHex.current, constants.yHex, 6, constants.sizeHex, {
-      inertia: Infinity,
-      label: `hex${n}`,
-    })
-  )
+  const pointsArrayHex = new PointsArrayHex()
+  const pointsH = pointsArrayHex.getPoints()
 
-  const partD = useRef(
-    Bodies.circle(xHex.current, constants.yHex, constants.sizeCirc, {
-      collisionFilter: {
-        group: -1,
-        category: constants.greenCategory,
-        mask: 0,
-      },
-      inertia: 0,
-      frictionAir: 0,
-      inverseInertia: 0,
-      restitution: 0,
-      frictionStatic: 0,
-    })
-  )
+  const pointsArrayTrian: any[] = []
 
   const partE = useRef(
     Bodies.polygon(xTrian.current, constants.yTrian, 3, constants.sizeTrian, {
@@ -121,11 +126,11 @@ const Test: React.FC = () => {
     for (let i = 1; i <= steps.current!; i++) {
       xxx.current = (xxx.current! + xIncr.current!) as any
       yyy.current = (yyy.current! + yIncr.current!) as any
-      if (shape.includes('rect')) {
+      if (shape?.includes('rect')) {
         pointsArrayRect.push(xxx.current, yyy.current, shape)
       }
-      if (shape === 'hex') {
-        pointsArrayHex.push([xxx.current, yyy.current])
+      if (shape?.includes('hex')) {
+        pointsArrayHex.push(xxx.current, yyy.current, shape)
       }
       if (shape === 'trian') {
         pointsArrayTrian.push([xxx.current, yyy.current])
@@ -189,6 +194,33 @@ const Test: React.FC = () => {
     ])
   }
 
+  const handleAddHex = () => {
+    nh++
+    const newPartC = new PolyBody(
+      constants.xHex,
+      constants.yHex,
+      6,
+      constants.sizeHex,
+      `hex${nh}`
+    ).body
+    const newPartD = new CircBody(
+      constants.xHex,
+      constants.yHex,
+      constants.sizeCirc,
+      `circh${nh}`
+    ).body
+    partC.current = newPartC
+    partD.current = newPartD
+    hexs.current.push(partC.current)
+    circsh.current.push(partD.current)
+
+    World.add(engine.current.world, [
+      // hex and circ
+      newPartC,
+      newPartD,
+    ])
+  }
+
   useEffect(() => {
     const cw = document.body.clientWidth
     const ch = document.body.clientHeight
@@ -210,8 +242,6 @@ const Test: React.FC = () => {
 
     Composite.add(world, [
       // blocks
-      partC.current,
-      partD.current,
       partE.current,
       partF.current,
 
@@ -238,8 +268,8 @@ const Test: React.FC = () => {
         points.splice(0, points.length)
       }
 
-      if (pointsArrayHex.length > 0) {
-        pointsArrayHex.splice(0, pointsArrayHex.length)
+      if (pointsH.length > 0) {
+        pointsH.splice(0, pointsH.length)
       }
 
       if (pointsArrayTrian.length > 0) {
@@ -286,57 +316,38 @@ const Test: React.FC = () => {
         }
       }
 
-      let coordsHex = [...partC.current.vertices.map((x) => [x.x, x.y])]
-      let coordsTrian = [...partE.current.vertices.map((x) => [x.x, x.y])]
+      if (
+        world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
+      ) {
+        if (hexs && hexs.current.length > 0) {
+          coordsHex = [
+            ...hexs.current.map((z) =>
+              z.vertices.map((x: any) => [x.x, x.y, z.label])
+            ),
+          ]
 
-      //hexagon face1
-      DDA(
-        coordsHex[0][0],
-        coordsHex[0][1],
-        coordsHex[1][0],
-        coordsHex[1][1],
-        constants.hexShape
-      )
-      //hexagon face2
-      DDA(
-        coordsHex[1][0],
-        coordsHex[1][1],
-        coordsHex[2][0],
-        coordsHex[2][1],
-        constants.hexShape
-      )
-      // hexagon face3
-      DDA(
-        coordsHex[3][0],
-        coordsHex[3][1],
-        coordsHex[2][0],
-        coordsHex[2][1],
-        constants.hexShape
-      )
-      //hexagon face4
-      DDA(
-        coordsHex[3][0],
-        coordsHex[3][1],
-        coordsHex[4][0],
-        coordsHex[4][1],
-        constants.hexShape
-      )
-      //hexagon face5
-      DDA(
-        coordsHex[4][0],
-        coordsHex[4][1],
-        coordsHex[5][0],
-        coordsHex[5][1],
-        constants.hexShape
-      )
-      //hexagon face6
-      DDA(
-        coordsHex[5][0],
-        coordsHex[5][1],
-        coordsHex[0][0],
-        coordsHex[0][1],
-        constants.hexShape
-      )
+          hexs.current.map((u) => {
+            if (coordsHex.length >= 1) {
+              coordsHex.map((x) => {
+                //hexagon face1
+                DDA(x[0][0], x[0][1], x[1][0], x[1][1], u.label)
+                //hexagon face2
+                DDA(x[1][0], x[1][1], x[2][0], x[2][1], u.label)
+                // hexagon face3
+                DDA(x[3][0], x[3][1], x[2][0], x[2][1], u.label)
+                //hexagon face4
+                DDA(x[3][0], x[3][1], x[4][0], x[4][1], u.label)
+                //hexagon face5
+                DDA(x[4][0], x[4][1], x[5][0], x[5][1], u.label)
+                //hexagon face6
+                DDA(x[5][0], x[5][1], x[0][0], x[0][1], u.label)
+              })
+            }
+          })
+        }
+      }
+
+      let coordsTrian = [...partE.current.vertices.map((x) => [x.x, x.y])]
 
       //triangle face1
       DDA(
@@ -421,21 +432,56 @@ const Test: React.FC = () => {
         })
       }
 
-      coordsHex = coordsHex.concat(pointsArrayHex)
-      coordsTrian = coordsTrian.concat(pointsArrayTrian)
+      //hex
+      if (
+        world.bodies.map((x) => x.label.includes('hex')).some((y) => y === true)
+      ) {
+        hexs.current.map((u) => {
+          coordsHex = coordsHex
+            .filter((y) => y.includes(u.label))
+            .map((j) => j)
+            .concat(pointsH.filter((x) => x.includes(u.label)))
 
-      let closestHex = [null, null] as number[] | null[],
-        closestTrian = [null, null] as number[] | null[],
-        distanceHex = Infinity,
-        distanceTrian = Infinity
+          let closestHex = [null, null] as number[] | null[] | any[],
+            distanceHex = Infinity
 
-      for (const [xX, yY] of coordsHex) {
-        let d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
-        if (d < distanceHex) {
-          closestHex = [xX, yY]
-          distanceHex = d
-        }
+          if (coordsHex.length > 0) {
+            for (const [xX, yY] of coordsHex) {
+              // @ts-ignore
+              const d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
+              if (d < distanceHex) {
+                closestHex = [xX, yY]
+                distanceHex = d
+              }
+            }
+          }
+
+          let numeroh = u.label.replace('hex', '')
+          let pBH = circsh?.current?.filter((j) => j.label.includes(numeroh))
+
+          if (
+            foundPhysics[0] &&
+            foundPhysics[0].label.includes(u.label) &&
+            closestHex
+          ) {
+            Body.translate(pBH[0], {
+              x: -(pBH[0]?.position.x - posX.current),
+              y: -(pBH[0]?.position.y - posY.current),
+            })
+          } else {
+            Body.translate(pBH[0], {
+              x: -(pBH[0]?.position.x - closestHex[0]!),
+              y: -(pBH[0]?.position.y - closestHex[1]!),
+            })
+          }
+
+          Body.setVelocity(pBH[0], { x: 0, y: 0 })
+        })
       }
+
+      coordsTrian = coordsTrian.concat(pointsArrayTrian)
+      let closestTrian = [null, null] as number[] | null[],
+        distanceTrian = Infinity
 
       for (const [xX, yY] of coordsTrian) {
         let d = Math.sqrt((touchX - xX) ** 2 + (touchY - yY) ** 2)
@@ -444,25 +490,6 @@ const Test: React.FC = () => {
           distanceTrian = d
         }
       }
-
-      //hex
-      if (
-        foundPhysics[0] &&
-        foundPhysics[0].label.includes('hex') &&
-        closestHex
-      ) {
-        Body.translate(partD.current, {
-          x: -(partD.current.position.x - posX.current),
-          y: -(partD.current.position.y - posY.current),
-        })
-      } else {
-        Body.translate(partD.current, {
-          x: -(partD.current.position.x - closestHex[0]!),
-          y: -(partD.current.position.y - closestHex[1]!),
-        })
-      }
-
-      Body.setVelocity(partD.current, { x: 0, y: 0 })
 
       //trian
       if (
@@ -481,7 +508,7 @@ const Test: React.FC = () => {
         })
       }
 
-      Body.setVelocity(partD.current, { x: 0, y: 0 })
+      Body.setVelocity(partF.current, { x: 0, y: 0 })
     })
 
     Composite.add(world, mouseConstraint)
@@ -513,6 +540,7 @@ const Test: React.FC = () => {
   return (
     <div>
       <button onClick={handleAddSquare}>Click me to add a Rect</button>
+      <button onClick={handleAddHex}>Click me to add a Hexagon</button>
       <div ref={scene} style={{ width: '100%', height: '100%' }} />
     </div>
   )
