@@ -592,9 +592,7 @@ const Test: React.FC = () => {
       circsh.current = []
       trians.current = []
       circst.current = []
-      pointsArrayRect.clear()
-      pointsArrayHex.clear()
-      pointsArrayTrian.clear()
+
       Events.off(mouseConstraint, 'mousemove', mouseMoveEvent)
 
       render.canvas.remove()
