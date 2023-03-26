@@ -12,17 +12,17 @@ import {
   Body,
   World,
 } from 'matter-js'
-import RectBody from './classes/RectBody'
 import CircBody from './classes/CircBody'
 import PolyBody from './classes/PolyBody'
 import PointsArrayPoly from './classes/PointsArrayPoly'
 import * as constants from './constants'
 import Layout from './Layout'
 import { useDispatch, useSelector } from 'react-redux'
-import { incrementN, incrementNh, incrementNt } from './store/myslice'
+import { incrementNh, incrementNt } from './store/myslice'
 import { RootState } from './store/store'
+import useAddSquare from './hooks/useAddSquare'
 
-type CoordsT = [number, number, string][][]
+type CoordsT = any[][][]
 type MouseMoveEvent = (event: {
   source: {
     mouse: {
@@ -33,7 +33,6 @@ type MouseMoveEvent = (event: {
 
 const Test: React.FC = () => {
   const dispatch = useDispatch()
-  const n = useSelector((state: RootState) => state.one.n)
   const nh = useSelector((state: RootState) => state.one.nh)
   const nt = useSelector((state: RootState) => state.one.nt)
   let coordsRect: CoordsT = []
@@ -47,6 +46,8 @@ const Test: React.FC = () => {
   const posX = useRef(0)
   const posY = useRef(0)
 
+  const { partA, partB, rects, circs, handleAddSquare } = useAddSquare(engine)
+
   const steps = useRef<number>()
   const yIncr = useRef<number>()
   const xIncr = useRef<number>()
@@ -54,24 +55,6 @@ const Test: React.FC = () => {
   const yyy = useRef<number>()
 
   const time = setInterval(draw, 25)
-
-  const partA = useRef<RectBody['body']>(
-    new RectBody(
-      constants.xSquare,
-      constants.ySquare,
-      constants.sizeRect,
-      `rect${n}`
-    ).body
-  )
-
-  const partB = useRef<CircBody['body']>(
-    new CircBody(
-      constants.xSquare,
-      constants.ySquare,
-      constants.sizeCirc,
-      `circ${n}`
-    ).body
-  )
 
   const partC = useRef<PolyBody['body']>(
     new PolyBody(
@@ -111,8 +94,6 @@ const Test: React.FC = () => {
     ).body
   )
 
-  const rects = useRef<any[]>([])
-  const circs = useRef<Body[]>([])
   const hexs = useRef<any[]>([])
   const circsh = useRef<any[]>([])
   const trians = useRef<any[]>([])
@@ -181,34 +162,6 @@ const Test: React.FC = () => {
     draw(shape)
   }
   //end
-
-  const handleAddSquare = () => {
-    dispatch(incrementN()) // increment the nh value in the store
-    const newRectId = `rect${n}` // use the updated nh value from the store
-    const newCircId = `circ${n}` // use the updated nh value from the store
-    const newPartA = new RectBody(
-      constants.xSquare,
-      constants.ySquare,
-      constants.sizeRect,
-      newRectId
-    ).body
-    const newPartB = new CircBody(
-      constants.xSquare,
-      constants.ySquare,
-      constants.sizeCirc,
-      newCircId
-    ).body
-    partA.current = newPartA
-    partB.current = newPartB
-    rects.current.push(partA.current)
-    circs.current.push(partB.current)
-
-    World.add(engine.current.world, [
-      // rect and circ
-      newPartA,
-      newPartB,
-    ])
-  }
 
   const handleAddHex = () => {
     dispatch(incrementNh()) // increment the nh value in the store
@@ -392,7 +345,7 @@ const Test: React.FC = () => {
     ) {
       rects.current.map((u) => {
         coordsRect = coordsRect
-          .filter((y) => y.includes(u.label))
+          .filter((y) => y.includes(u.label as any))
           .map((j) => j)
           .concat(points.filter((x) => x.includes(u.label)))
 
