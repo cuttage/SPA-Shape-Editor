@@ -17,6 +17,10 @@ import CircBody from './classes/CircBody'
 import PolyBody from './classes/PolyBody'
 import PointsArrayPoly from './classes/PointsArrayPoly'
 import * as constants from './constants'
+import Layout from './Layout'
+import { useDispatch, useSelector } from 'react-redux'
+import { incrementN, incrementNh, incrementNt } from './store/myslice'
+import { RootState } from './store/store'
 
 type CoordsT = [number, number, string][][]
 type MouseMoveEvent = (event: {
@@ -28,9 +32,10 @@ type MouseMoveEvent = (event: {
 }) => void
 
 const Test: React.FC = () => {
-  let n = 0
-  let nh = 0
-  let nt = 0
+  const dispatch = useDispatch()
+  const n = useSelector((state: RootState) => state.one.n)
+  const nh = useSelector((state: RootState) => state.one.nh)
+  const nt = useSelector((state: RootState) => state.one.nt)
   let coordsRect: CoordsT = []
   let coordsHex: CoordsT = []
   let coordsTrian: CoordsT = []
@@ -178,18 +183,20 @@ const Test: React.FC = () => {
   //end
 
   const handleAddSquare = () => {
-    n++
+    dispatch(incrementN()) // increment the nh value in the store
+    const newRectId = `rect${n}` // use the updated nh value from the store
+    const newCircId = `circ${n}` // use the updated nh value from the store
     const newPartA = new RectBody(
       constants.xSquare,
       constants.ySquare,
       constants.sizeRect,
-      `rect${n}`
+      newRectId
     ).body
     const newPartB = new CircBody(
       constants.xSquare,
       constants.ySquare,
       constants.sizeCirc,
-      `circ${n}`
+      newCircId
     ).body
     partA.current = newPartA
     partB.current = newPartB
@@ -204,19 +211,21 @@ const Test: React.FC = () => {
   }
 
   const handleAddHex = () => {
-    nh++
+    dispatch(incrementNh()) // increment the nh value in the store
+    const newHexId = `hex${nh}` // use the updated nh value from the store
+    const newCirchId = `circh${nh}` // use the updated nh value from the store
     const newPartC = new PolyBody(
       constants.xHex,
       constants.yHex,
       6,
       constants.sizeHex,
-      `hex${nh}`
+      newHexId
     ).body
     const newPartD = new CircBody(
       constants.xHex,
       constants.yHex,
       constants.sizeCirc,
-      `circh${nh}`
+      newCirchId
     ).body
     partC.current = newPartC
     partD.current = newPartD
@@ -231,19 +240,21 @@ const Test: React.FC = () => {
   }
 
   const handleAddTrian = () => {
-    nt++
+    dispatch(incrementNt()) // increment the nh value in the store
+    const newTrianId = `trian${nt}` // use the updated nh value from the store
+    const newCirctId = `circt${nt}` // use the updated nh value from the store
     const newPartE = new PolyBody(
       constants.xTrian,
       constants.yTrian,
       3,
       constants.sizeTrian,
-      `trian${nt}`
+      newTrianId
     ).body
     const newPartF = new CircBody(
       constants.xTrian,
       constants.yTrian,
       constants.sizeCirc,
-      `circt${nt}`
+      newCirctId
     ).body
     partE.current = newPartE
     partF.current = newPartF
@@ -603,12 +614,13 @@ const Test: React.FC = () => {
   }, [])
 
   return (
-    <div>
-      <button onClick={handleAddSquare}>Click me to add a Rect</button>
-      <button onClick={handleAddHex}>Click me to add a Hexagon</button>
-      <button onClick={handleAddTrian}>Click me to add a Triangle</button>
+    <Layout
+      addRectC={handleAddSquare}
+      addTrianC={handleAddTrian}
+      addHexC={handleAddHex}
+    >
       <div ref={scene} style={{ width: '100%', height: '100%' }} />
-    </div>
+    </Layout>
   )
 }
 
