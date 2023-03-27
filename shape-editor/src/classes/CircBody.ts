@@ -18,7 +18,7 @@ class CircBody {
       frictionStatic: 0,
       isStatic: false,
       render: {
-        strokeStyle: 'white',
+        strokeStyle: 'transparent',
         fillStyle: 'transparent',
         lineWidth: 1,
       },

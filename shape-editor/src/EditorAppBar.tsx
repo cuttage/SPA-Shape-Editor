@@ -15,25 +15,50 @@ import HeightOutlinedIcon from '@mui/icons-material/HeightOutlined'
 import { useSelector, useDispatch } from 'react-redux'
 import { setSelectable } from './store/selectable'
 import { setClickable } from './store/clickable'
+import { setIsDistance } from './store/isdistance'
 import { RootState } from './store/store'
+import { World } from 'matter-js'
 
 interface EditorAppBarProps {
   addRectC?: (event: React.MouseEvent<HTMLButtonElement>) => void
   addHexC?: (event: React.MouseEvent<HTMLButtonElement>) => void
   addTrianC?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  showDistance?: () => void
+  world?: World
 }
 
-const EditorAppBar = ({ addRectC, addHexC, addTrianC }: EditorAppBarProps) => {
+const EditorAppBar = ({
+  addRectC,
+  addHexC,
+  addTrianC,
+  showDistance,
+  world,
+}: EditorAppBarProps) => {
   const selectable = useSelector(
     (state: RootState) => state.selectable.selectable
   )
   const clickable = useSelector((state: RootState) => state.clickable.clickable)
+  const isDistance = useSelector(
+    (state: RootState) => state.isDistance.isDistance
+  )
   const dispatch = useDispatch()
+
+  const hasBodies = world!.bodies.filter(
+    (x) =>
+      x.label.includes('rect') ||
+      x.label.includes('hex') ||
+      x.label.includes('trian')
+  ).length
+
+  const result = !hasBodies
 
   const toggleSelectable = () => {
     dispatch(setSelectable(!selectable))
     if (clickable === true) {
       toggleClickable()
+    }
+    if (isDistance === true) {
+      toggleIsDistance()
     }
   }
 
@@ -41,6 +66,26 @@ const EditorAppBar = ({ addRectC, addHexC, addTrianC }: EditorAppBarProps) => {
     dispatch(setClickable(!clickable))
     if (selectable === true) {
       toggleSelectable()
+    }
+    if (isDistance === true) {
+      toggleIsDistance()
+    }
+  }
+
+  const toggleIsDistance = () => {
+    dispatch(setIsDistance(!isDistance))
+    toggleShowDistance()
+    if (selectable === true) {
+      toggleSelectable()
+    }
+    if (clickable === true) {
+      toggleClickable()
+    }
+  }
+
+  const toggleShowDistance = () => {
+    if (showDistance) {
+      showDistance()
     }
   }
 
@@ -52,6 +97,11 @@ const EditorAppBar = ({ addRectC, addHexC, addTrianC }: EditorAppBarProps) => {
   const buttonStyleB = {
     backgroundColor: '#9E9E9E',
     outline: clickable ? '3px solid lime' : 'none',
+  }
+
+  const buttonStyleC = {
+    backgroundColor: '#9E9E9E',
+    outline: isDistance ? '3px solid lime' : 'none',
   }
 
   return (
@@ -92,8 +142,12 @@ const EditorAppBar = ({ addRectC, addHexC, addTrianC }: EditorAppBarProps) => {
                   </IconButton>
                 </div>
               ) : (
-                <div style={{ backgroundColor: '#9E9E9E' }}>
-                  <IconButton aria-label="closest point tool">
+                <div style={buttonStyleC}>
+                  <IconButton
+                    aria-label="closest point tool"
+                    onClick={toggleIsDistance}
+                    disabled={result}
+                  >
                     <HeightOutlinedIcon fontSize="large" color="action" />
                   </IconButton>
                 </div>

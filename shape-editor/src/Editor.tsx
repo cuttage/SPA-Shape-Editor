@@ -19,6 +19,7 @@ import useAddHexagon from './hooks/useAddHexagon'
 import useAddTriangle from './hooks/useAddTriangle'
 import useShapeSelect from './hooks/useShapeSelect'
 import useShapeDrag from './hooks/useShapeDrag'
+import useShapeDistance from './hooks/useShapeDistance'
 import { whiteStroke, transparentFill, lineSize } from './constants'
 import { useSelector } from 'react-redux'
 import { RootState } from './store/store'
@@ -74,6 +75,9 @@ const Editor: FC = () => {
 
   const handleShapeSelect = useShapeSelect({ world, foundPhysics })
   const handleShapeDrag = useShapeDrag({ world, foundPhysics })
+  const { handleVisualizeShapeDistance } = useShapeDistance({
+    world,
+  })
   const selectableState = useSelector(
     (state: RootState) => state.selectable.selectable
   )
@@ -409,6 +413,10 @@ const Editor: FC = () => {
     }
   }
 
+  const handleShowShapes = () => {
+    handleVisualizeShapeDistance()
+  }
+
   useEffect(() => {
     if (!scene.current) return
 
@@ -566,6 +574,8 @@ const Editor: FC = () => {
       addRectC={handleAddSquare}
       addTrianC={handleAddTrian}
       addHexC={handleAddHex}
+      showDistance={handleShowShapes}
+      world={world}
     >
       <div ref={scene} style={{ width: '100%', height: '100%' }} />
     </Layout>
