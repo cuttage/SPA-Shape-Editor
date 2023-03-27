@@ -12,10 +12,16 @@ class CircBody {
       },
       label: label,
       inertia: 0,
-      frictionAir: 0,
+      frictionAir: Number.MIN_VALUE,
       inverseInertia: 0,
       restitution: 0,
       frictionStatic: 0,
+      isStatic: false,
+      render: {
+        strokeStyle: 'white',
+        fillStyle: 'transparent',
+        lineWidth: 1,
+      },
     })
   }
 

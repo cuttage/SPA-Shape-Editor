@@ -5,8 +5,14 @@ class RectBody {
 
   constructor(x: number, y: number, size: number, label: string) {
     this._body = Bodies.rectangle(x, y, size, size, {
-      inertia: Infinity,
+      inertia: Number.MAX_VALUE,
       label: label,
+      isStatic: true,
+      render: {
+        strokeStyle: 'white',
+        fillStyle: 'transparent',
+        lineWidth: 1,
+      },
     })
   }
 

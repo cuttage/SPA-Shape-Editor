@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import { FC, useEffect, useRef } from 'react'
 import {
   Engine,
   Render,
@@ -17,6 +17,11 @@ import Layout from './Layout'
 import useAddSquare from './hooks/useAddSquare'
 import useAddHexagon from './hooks/useAddHexagon'
 import useAddTriangle from './hooks/useAddTriangle'
+import useShapeSelect from './hooks/useShapeSelect'
+import useShapeDrag from './hooks/useShapeDrag'
+import { whiteStroke, transparentFill, lineSize } from './constants'
+import { useSelector } from 'react-redux'
+import { RootState } from './store/store'
 
 type CoordsT = any[][][]
 type MouseMoveEvent = (event: {
@@ -27,7 +32,7 @@ type MouseMoveEvent = (event: {
   }
 }) => void
 
-const Editor: React.FC = () => {
+const Editor: FC = () => {
   let coordsRect: CoordsT = []
   let coordsHex: CoordsT = []
   let coordsTrian: CoordsT = []
@@ -38,6 +43,10 @@ const Editor: React.FC = () => {
   const runner = useRef(Runner.create())
   const posX = useRef(0)
   const posY = useRef(0)
+
+  const renderRef = useRef<Render>()
+  const mouseRef = useRef<Mouse>()
+  const mouseConstraintRef = useRef<MouseConstraint>()
 
   const { partA, partB, rects, circs, handleAddSquare } = useAddSquare(engine)
   const { partC, partD, hexs, circsh, handleAddHex } = useAddHexagon(engine)
@@ -60,6 +69,17 @@ const Editor: React.FC = () => {
 
   const pointsArrayTrian = new PointsArrayPoly()
   const pointsT = pointsArrayTrian.getPoints()
+
+  const foundPhysics = useRef<Body[]>([])
+
+  const handleShapeSelect = useShapeSelect({ world, foundPhysics })
+  const handleShapeDrag = useShapeDrag({ world, foundPhysics })
+  const selectableState = useSelector(
+    (state: RootState) => state.selectable.selectable
+  )
+  const clickableState = useSelector(
+    (state: RootState) => state.clickable.clickable
+  )
 
   function isPointInsideAABB(box: any, pointX: number, pointY: number) {
     return (
@@ -129,7 +149,7 @@ const Editor: React.FC = () => {
       pointsT.splice(0, pointsT.length)
     }
 
-    const foundPhysics = Query.point(
+    foundPhysics.current = Query.point(
       engine.current.world.bodies,
       event.source.mouse.position
     )
@@ -263,8 +283,8 @@ const Editor: React.FC = () => {
 
         if (
           isPointInsideAABB(u.bounds, posX.current, posY.current) === true &&
-          foundPhysics[0] &&
-          foundPhysics[0].label.includes(u.label) &&
+          foundPhysics.current[0] &&
+          foundPhysics.current[0].label.includes(u.label) &&
           closestRect
         ) {
           Body.translate(pB[0], {
@@ -310,8 +330,8 @@ const Editor: React.FC = () => {
         let pBH = circsh?.current?.filter((j) => j.label.includes(numeroh))
 
         if (
-          foundPhysics[0] &&
-          foundPhysics[0].label.includes(u.label) &&
+          foundPhysics.current[0] &&
+          foundPhysics.current[0].label.includes(u.label) &&
           closestHex
         ) {
           Body.translate(pBH[0], {
@@ -357,8 +377,8 @@ const Editor: React.FC = () => {
         let pBT = circst?.current?.filter((j) => j.label.includes(numerot))
 
         if (
-          foundPhysics[0] &&
-          foundPhysics[0].label.includes(u.label) &&
+          foundPhysics.current[0] &&
+          foundPhysics.current[0].label.includes(u.label) &&
           closestTrian
         ) {
           Body.translate(pBT[0], {
@@ -377,14 +397,28 @@ const Editor: React.FC = () => {
     }
   }
 
+  const mouseClickEvent: MouseMoveEvent = function () {
+    if (selectableState) {
+      handleShapeSelect()
+    }
+  }
+
+  const mouseClickEventSecond: MouseMoveEvent = function () {
+    if (!selectableState && clickableState) {
+      handleShapeDrag()
+    }
+  }
+
   useEffect(() => {
+    if (!scene.current) return
+
     const cw = document.body.clientWidth
     const ch = document.body.clientHeight
 
     engine.current.gravity.y = 0
     engine.current.gravity.x = 0
 
-    const render = Render.create({
+    renderRef.current = Render.create({
       element: scene.current as any,
       engine: engine.current,
       options: {
@@ -393,51 +427,91 @@ const Editor: React.FC = () => {
         showVelocity: true,
         background: 'transparent',
         showConvexHulls: true,
+        wireframes: false,
       },
     })
 
     Composite.add(world, [
       // walls
-      Bodies.rectangle(400, 0, 800, 50, { isStatic: true, label: 'wall1' }),
-      Bodies.rectangle(400, 600, 800, 50, { isStatic: true, label: 'wall2' }),
-      Bodies.rectangle(800, 300, 50, 600, { isStatic: true, label: 'wall3' }),
-      Bodies.rectangle(0, 300, 50, 600, { isStatic: true, label: 'wall4' }),
+      Bodies.rectangle(400, 0, 800, 50, {
+        isStatic: true,
+        label: 'wall1',
+        render: {
+          strokeStyle: whiteStroke,
+          fillStyle: transparentFill,
+          lineWidth: lineSize,
+        },
+      }),
+      Bodies.rectangle(400, 600, 800, 50, {
+        isStatic: true,
+        label: 'wall2',
+        render: {
+          strokeStyle: whiteStroke,
+          fillStyle: transparentFill,
+          lineWidth: lineSize,
+        },
+      }),
+      Bodies.rectangle(800, 300, 50, 600, {
+        isStatic: true,
+        label: 'wall3',
+        render: {
+          strokeStyle: whiteStroke,
+          fillStyle: transparentFill,
+          lineWidth: lineSize,
+        },
+      }),
+      Bodies.rectangle(0, 300, 50, 600, {
+        isStatic: true,
+        label: 'wall4',
+        render: {
+          strokeStyle: whiteStroke,
+          fillStyle: transparentFill,
+          lineWidth: lineSize,
+        },
+      }),
     ])
 
-    const mouse = Mouse.create(render.canvas),
-      mouseConstraint = MouseConstraint.create(engine.current, {
-        mouse: mouse,
-        constraint: {
-          stiffness: 0.2,
-          render: {
-            visible: true,
-          },
+    mouseRef.current = Mouse.create(renderRef.current.canvas)
+
+    mouseConstraintRef.current = MouseConstraint.create(engine.current, {
+      mouse: mouseRef.current,
+      constraint: {
+        stiffness: 0.2,
+        render: {
+          visible: true,
         },
-      })
+      },
+    })
 
-    Events.on(mouseConstraint, 'mousemove', mouseMoveEvent)
+    Composite.add(world, mouseConstraintRef.current)
 
-    Composite.add(world, mouseConstraint)
+    renderRef.current.mouse = mouseRef.current
 
-    render.mouse = mouse
-
-    Render.lookAt(render, {
+    Render.lookAt(renderRef.current, {
       min: { x: 0, y: 0 },
       max: { x: cw, y: ch },
     })
 
-    Render.run(render)
+    Render.run(renderRef.current)
 
     Runner.run(runner.current, engine.current)
 
     // unmount
     return () => {
       clearInterval(time)
-      Render.stop(render)
+
+      Render.stop(renderRef.current!)
       Runner.stop(runner.current)
       World.clear(world, false)
       Engine.clear(engine.current)
       Composite.clear(world, false)
+
+      mouseRef.current = null as any
+      mouseConstraintRef.current = null as any
+      renderRef.current!.canvas.remove()
+      renderRef.current!.canvas = null as any
+      renderRef.current!.context = null as any
+      renderRef.current!.textures = {}
 
       partA.current = null as any
       partB.current = null as any
@@ -451,15 +525,41 @@ const Editor: React.FC = () => {
       circsh.current = []
       trians.current = []
       circst.current = []
-
-      Events.off(mouseConstraint, 'mousemove', mouseMoveEvent)
-
-      render.canvas.remove()
-      render.canvas = null as any
-      render.context = null as any
-      render.textures = {}
+      foundPhysics.current = []
     }
   }, [])
+
+  useEffect(() => {
+    if (!mouseConstraintRef.current) return
+
+    Events.on(mouseConstraintRef.current, 'mousemove', mouseMoveEvent)
+
+    return () => {
+      if (!mouseConstraintRef.current) return
+      Events.off(mouseConstraintRef.current, 'mousemove', mouseMoveEvent)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mouseConstraintRef.current) return
+
+    Events.on(mouseConstraintRef.current, 'mousedown', mouseClickEvent)
+
+    return () => {
+      if (!mouseConstraintRef.current) return
+      Events.off(mouseConstraintRef.current, 'mousedown', mouseClickEvent)
+    }
+  }, [selectableState])
+
+  useEffect(() => {
+    if (!mouseConstraintRef.current) return
+    Events.on(mouseConstraintRef.current, 'mousedown', mouseClickEventSecond)
+
+    return () => {
+      if (!mouseConstraintRef.current) return
+      Events.off(mouseConstraintRef.current, 'mousedown', mouseClickEventSecond)
+    }
+  }, [clickableState, selectableState])
 
   return (
     <Layout

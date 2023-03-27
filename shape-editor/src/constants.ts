@@ -10,3 +10,9 @@ export const ySquare = 400
 export const xSquare = Math.random() * 400 + 30
 export const xHex = Math.random() * 400 + 30
 export const xTrian = Math.random() * 400 + 30
+
+export const whiteStroke = 'white'
+export const limeStroke = 'lime'
+export const transparentFill = 'transparent'
+export const lineSize = 1
+export const lineSize3 = 3

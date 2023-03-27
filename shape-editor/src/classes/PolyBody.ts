@@ -11,8 +11,14 @@ class PolyBody {
     label: string
   ) {
     this._body = Bodies.polygon(x, y, faces, size, {
-      inertia: Infinity,
+      inertia: Number.MAX_VALUE,
       label: label,
+      isStatic: true,
+      render: {
+        strokeStyle: 'white',
+        fillStyle: 'transparent',
+        lineWidth: 1,
+      },
     })
   }
 
