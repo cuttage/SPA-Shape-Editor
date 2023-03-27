@@ -49,10 +49,26 @@ const Editor: FC = () => {
   const mouseRef = useRef<Mouse>()
   const mouseConstraintRef = useRef<MouseConstraint>()
 
-  const { partA, partB, rects, circs, handleAddSquare } = useAddSquare(engine)
-  const { partC, partD, hexs, circsh, handleAddHex } = useAddHexagon(engine)
-  const { partE, partF, trians, circst, handleAddTrian } =
-    useAddTriangle(engine)
+  const widthT = renderRef.current?.canvas?.width
+    ? renderRef.current?.canvas?.width - 88
+    : 0
+  const heightT = renderRef.current?.canvas?.height || 0
+
+  const { partA, partB, rects, circs, handleAddSquare } = useAddSquare(engine, {
+    width: widthT,
+    height: heightT,
+  })
+  const { partE, partF, trians, circst, handleAddTrian } = useAddTriangle(
+    engine,
+    {
+      width: widthT,
+      height: heightT,
+    }
+  )
+  const { partC, partD, hexs, circsh, handleAddHex } = useAddHexagon(engine, {
+    width: widthT,
+    height: heightT,
+  })
 
   const steps = useRef<number>()
   const yIncr = useRef<number>()
@@ -439,9 +455,14 @@ const Editor: FC = () => {
       },
     })
 
+    const width = renderRef.current?.canvas?.width
+      ? renderRef.current?.canvas?.width - 88
+      : 0
+    const height = renderRef.current?.canvas?.height || 0
+
     Composite.add(world, [
       // walls
-      Bodies.rectangle(400, 0, 800, 50, {
+      Bodies.rectangle(width / 2, 0, width, 50, {
         isStatic: true,
         label: 'wall1',
         render: {
@@ -450,7 +471,7 @@ const Editor: FC = () => {
           lineWidth: lineSize,
         },
       }),
-      Bodies.rectangle(400, 600, 800, 50, {
+      Bodies.rectangle(width / 2, height, width, 50, {
         isStatic: true,
         label: 'wall2',
         render: {
@@ -459,7 +480,7 @@ const Editor: FC = () => {
           lineWidth: lineSize,
         },
       }),
-      Bodies.rectangle(800, 300, 50, 600, {
+      Bodies.rectangle(width, height / 2, 50, height, {
         isStatic: true,
         label: 'wall3',
         render: {
@@ -468,7 +489,7 @@ const Editor: FC = () => {
           lineWidth: lineSize,
         },
       }),
-      Bodies.rectangle(0, 300, 50, 600, {
+      Bodies.rectangle(0, height / 2, 50, height, {
         isStatic: true,
         label: 'wall4',
         render: {
