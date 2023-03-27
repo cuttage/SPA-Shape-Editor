@@ -12,12 +12,14 @@ import ChangeHistoryIcon from '@mui/icons-material/ChangeHistory'
 import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp'
 import MoveDownOutlinedIcon from '@mui/icons-material/MoveDownOutlined'
 import HeightOutlinedIcon from '@mui/icons-material/HeightOutlined'
+import HistoryEduOutlinedIcon from '@mui/icons-material/HistoryEduOutlined'
 import { useSelector, useDispatch } from 'react-redux'
 import { setSelectable } from './store/selectable'
 import { setClickable } from './store/clickable'
 import { setIsDistance } from './store/isdistance'
 import { RootState } from './store/store'
 import { World } from 'matter-js'
+import useWorldToJsonPrinter from './hooks/useWorldToJsonPrinter'
 
 interface EditorAppBarProps {
   addRectC?: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -42,6 +44,8 @@ const EditorAppBar = ({
     (state: RootState) => state.isDistance.isDistance
   )
   const dispatch = useDispatch()
+
+  const handleWorldToJsonPrinter = useWorldToJsonPrinter(world!)
 
   const hasBodies = world!.bodies.filter(
     (x) =>
@@ -185,6 +189,21 @@ const EditorAppBar = ({
             </ListItem>
           )
         )}
+      </List>
+      <Divider />
+      <List>
+        <ListItem key={'HistoryEduOutlinedIcon'}>
+          <ListItemIcon>
+            <div style={{ backgroundColor: '#9E9E9E' }}>
+              <IconButton
+                aria-label="write state in JSON tool"
+                onClick={handleWorldToJsonPrinter}
+              >
+                <HistoryEduOutlinedIcon fontSize="large" color="action" />
+              </IconButton>
+            </div>
+          </ListItemIcon>
+        </ListItem>
       </List>
     </Drawer>
   )
