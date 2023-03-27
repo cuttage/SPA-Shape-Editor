@@ -1,5 +1,5 @@
 import './App.css'
-import Test from './Test'
+import Editor from './Editor'
 import { Provider } from 'react-redux'
 import { FC } from 'react'
 import store from './store/store'
@@ -7,7 +7,7 @@ import store from './store/store'
 const App: FC = () => {
   return (
     <Provider store={store}>
-      <Test></Test>
+      <Editor />
     </Provider>
   )
 }

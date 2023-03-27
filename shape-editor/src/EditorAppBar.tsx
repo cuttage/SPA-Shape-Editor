@@ -13,17 +13,13 @@ import HighlightAltSharpIcon from '@mui/icons-material/HighlightAltSharp'
 import MoveDownOutlinedIcon from '@mui/icons-material/MoveDownOutlined'
 import HeightOutlinedIcon from '@mui/icons-material/HeightOutlined'
 
-interface ExampleAppBarProps {
+interface EditorAppBarProps {
   addRectC?: (event: React.MouseEvent<HTMLButtonElement>) => void
   addHexC?: (event: React.MouseEvent<HTMLButtonElement>) => void
   addTrianC?: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
-const ExampleAppBar = ({
-  addRectC,
-  addHexC,
-  addTrianC,
-}: ExampleAppBarProps) => {
+const EditorAppBar = ({ addRectC, addHexC, addTrianC }: EditorAppBarProps) => {
   return (
     <Drawer
       variant="permanent"
@@ -103,4 +99,4 @@ const ExampleAppBar = ({
   )
 }
 
-export default ExampleAppBar
+export default EditorAppBar

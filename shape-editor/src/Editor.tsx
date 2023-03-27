@@ -12,15 +12,11 @@ import {
   Body,
   World,
 } from 'matter-js'
-import CircBody from './classes/CircBody'
-import PolyBody from './classes/PolyBody'
 import PointsArrayPoly from './classes/PointsArrayPoly'
-import * as constants from './constants'
 import Layout from './Layout'
-import { useDispatch, useSelector } from 'react-redux'
-import { incrementNh, incrementNt } from './store/myslice'
-import { RootState } from './store/store'
 import useAddSquare from './hooks/useAddSquare'
+import useAddHexagon from './hooks/useAddHexagon'
+import useAddTriangle from './hooks/useAddTriangle'
 
 type CoordsT = any[][][]
 type MouseMoveEvent = (event: {
@@ -31,10 +27,7 @@ type MouseMoveEvent = (event: {
   }
 }) => void
 
-const Test: React.FC = () => {
-  const dispatch = useDispatch()
-  const nh = useSelector((state: RootState) => state.one.nh)
-  const nt = useSelector((state: RootState) => state.one.nt)
+const Editor: React.FC = () => {
   let coordsRect: CoordsT = []
   let coordsHex: CoordsT = []
   let coordsTrian: CoordsT = []
@@ -47,6 +40,9 @@ const Test: React.FC = () => {
   const posY = useRef(0)
 
   const { partA, partB, rects, circs, handleAddSquare } = useAddSquare(engine)
+  const { partC, partD, hexs, circsh, handleAddHex } = useAddHexagon(engine)
+  const { partE, partF, trians, circst, handleAddTrian } =
+    useAddTriangle(engine)
 
   const steps = useRef<number>()
   const yIncr = useRef<number>()
@@ -55,49 +51,6 @@ const Test: React.FC = () => {
   const yyy = useRef<number>()
 
   const time = setInterval(draw, 25)
-
-  const partC = useRef<PolyBody['body']>(
-    new PolyBody(
-      constants.xHex,
-      constants.yHex,
-      6,
-      constants.sizeHex,
-      `hex${nh}`
-    ).body
-  )
-
-  const partD = useRef<CircBody['body']>(
-    new CircBody(
-      constants.xHex,
-      constants.yHex,
-      constants.sizeCirc,
-      `circh${nh}`
-    ).body
-  )
-
-  const partE = useRef<PolyBody['body']>(
-    new PolyBody(
-      constants.xTrian,
-      constants.yTrian,
-      3,
-      constants.sizeTrian,
-      `trian${nt}`
-    ).body
-  )
-
-  const partF = useRef<CircBody['body']>(
-    new CircBody(
-      constants.xTrian,
-      constants.yTrian,
-      constants.sizeCirc,
-      `circt${nt}`
-    ).body
-  )
-
-  const hexs = useRef<any[]>([])
-  const circsh = useRef<any[]>([])
-  const trians = useRef<any[]>([])
-  const circst = useRef<any[]>([])
 
   const pointsArrayRect = new PointsArrayPoly()
   const points = pointsArrayRect.getPoints()
@@ -162,64 +115,6 @@ const Test: React.FC = () => {
     draw(shape)
   }
   //end
-
-  const handleAddHex = () => {
-    dispatch(incrementNh()) // increment the nh value in the store
-    const newHexId = `hex${nh}` // use the updated nh value from the store
-    const newCirchId = `circh${nh}` // use the updated nh value from the store
-    const newPartC = new PolyBody(
-      constants.xHex,
-      constants.yHex,
-      6,
-      constants.sizeHex,
-      newHexId
-    ).body
-    const newPartD = new CircBody(
-      constants.xHex,
-      constants.yHex,
-      constants.sizeCirc,
-      newCirchId
-    ).body
-    partC.current = newPartC
-    partD.current = newPartD
-    hexs.current.push(partC.current)
-    circsh.current.push(partD.current)
-
-    World.add(engine.current.world, [
-      // hex and circ
-      newPartC,
-      newPartD,
-    ])
-  }
-
-  const handleAddTrian = () => {
-    dispatch(incrementNt()) // increment the nh value in the store
-    const newTrianId = `trian${nt}` // use the updated nh value from the store
-    const newCirctId = `circt${nt}` // use the updated nh value from the store
-    const newPartE = new PolyBody(
-      constants.xTrian,
-      constants.yTrian,
-      3,
-      constants.sizeTrian,
-      newTrianId
-    ).body
-    const newPartF = new CircBody(
-      constants.xTrian,
-      constants.yTrian,
-      constants.sizeCirc,
-      newCirctId
-    ).body
-    partE.current = newPartE
-    partF.current = newPartF
-    trians.current.push(partE.current)
-    circst.current.push(partF.current)
-
-    World.add(engine.current.world, [
-      // trian and circ
-      newPartE,
-      newPartF,
-    ])
-  }
 
   const mouseMoveEvent: MouseMoveEvent = function (event) {
     if (points.length > 0) {
@@ -393,7 +288,7 @@ const Test: React.FC = () => {
     ) {
       hexs.current.map((u) => {
         coordsHex = coordsHex
-          .filter((y) => y.includes(u.label))
+          .filter((y) => y.includes(u.label as any))
           .map((j) => j)
           .concat(pointsH.filter((x) => x.includes(u.label)))
 
@@ -440,7 +335,7 @@ const Test: React.FC = () => {
     ) {
       trians.current.map((u) => {
         coordsTrian = coordsTrian
-          .filter((y) => y.includes(u.label))
+          .filter((y) => y.includes(u.label as any))
           .map((j) => j)
           .concat(pointsT.filter((x) => x.includes(u.label)))
 
@@ -577,4 +472,4 @@ const Test: React.FC = () => {
   )
 }
 
-export default Test
+export default Editor

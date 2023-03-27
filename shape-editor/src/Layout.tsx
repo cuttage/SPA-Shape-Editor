@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import ExampleAppBar from './ExampleAppBar'
+import EditorAppBar from './EditorAppBar'
 
 type LayoutProps = {
   children: ReactNode
@@ -11,11 +11,11 @@ type LayoutProps = {
 const Layout = ({ children, addRectC, addHexC, addTrianC }: LayoutProps) => {
   return (
     <div style={{ display: 'flex' }}>
-      <ExampleAppBar
+      <EditorAppBar
         addRectC={addRectC}
         addHexC={addHexC}
         addTrianC={addTrianC}
-      ></ExampleAppBar>
+      ></EditorAppBar>
       <main style={{ flexGrow: 1 }}>{children}</main>
     </div>
   )
