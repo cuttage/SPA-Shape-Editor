@@ -2,6 +2,8 @@
 
 ## React-based Physics Simulation with TypeScript and Redux Toolkit using Matter.js for Shape Editor
 
+### See it Live [Shape Editor](https://spa-shape-editor.vercel.app/). Google Chrome `Version 111.0.5563.146 (Official Build) (x86_64)` required.
+
 This project is a React application that allows the user to draw polygons, hexagons, and triangles on an HTML5 canvas. It is powered by Matter.js physics engine and leverages React's hooks for its interactivity. The design involves Matter.js world and the React library working together to handle canvas rendering, collision detection, and physics simulation.
 
 In other words, this project is a web application for creating and editing shapes using Matter.js, a 2D physics engine, and React, a popular JavaScript library for building user interfaces. The project uses Redux Toolkit, a library for managing state in React applications, to manage the application's state.
